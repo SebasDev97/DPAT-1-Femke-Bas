@@ -1,48 +1,38 @@
 @startuml DPAT-1-Femke-Bas-Domain
 
+' Compact class diagram: focus on structure, patterns and key dependencies.
 skinparam classAttributeIconSize 0
 skinparam classFontStyle bold
 skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam linetype ortho
+skinparam nodesep 25
+skinparam ranksep 25
+hide circle
 hide empty members
 
-' ============================================================
-' DOMAIN LAYER — Composite pattern
-' ============================================================
-package "Domain" {
-
+package "Domain\nComposite" as Domain {
     abstract class StateComponent {
         +Identifier : string
         +Name : string
         +Parent : CompoundState
-        +{abstract} Accept(visitor : IFsmVisitor)
-        +IsDescendantOf(ancestor : CompoundState) : bool
-        +GetRoot() : StateComponent
+        +Accept(visitor)
     }
 
-    class SimpleState {
-        +EntryAction : Action
-        +DoAction : Action
-        +ExitAction : Action
-        +Accept(visitor : IFsmVisitor)
-    }
-
+    class SimpleState
     class CompoundState {
-        -children : List<StateComponent>
-        +EntryAction : Action
-        +DoAction : Action
-        +ExitAction : Action
+        +Children : IReadOnlyList<StateComponent>
         +AddChild(child : StateComponent)
         +RemoveChild(child : StateComponent)
-        +Children : IReadOnlyList<StateComponent>
-        +Accept(visitor : IFsmVisitor)
     }
+    class InitialState
+    class FinalState
 
-    class InitialState {
-        +Accept(visitor : IFsmVisitor)
-    }
-
-    class FinalState {
-        +Accept(visitor : IFsmVisitor)
+    class StateMachine {
+        +Name : string
+        +RootStates : IReadOnlyList<StateComponent>
+        +Transitions : IReadOnlyList<Transition>
+        +Accept(visitor)
     }
 
     class Transition {
@@ -52,243 +42,136 @@ package "Domain" {
         +Trigger : Trigger
         +Guard : Guard
         +Effect : Action
-        +IsAutomatic : bool
-        +IsSelfTransition : bool
-        +Accept(visitor : IFsmVisitor)
+        +Accept(visitor)
     }
 
-    class Trigger {
-        +Identifier : string
-        +Description : string
-    }
+    class Trigger
+    class Guard
+    class Action
+    enum ActionType
 
-    class Action {
-        +OwnerIdentifier : string
-        +Description : string
-        +Type : ActionType
-    }
+    StateComponent <|--- SimpleState
+    StateComponent <|--- CompoundState
+    StateComponent <|--- InitialState
+    StateComponent <|--- FinalState
 
-    enum ActionType {
-        Entry
-        Do
-        Exit
-        Transition
-    }
+    CompoundState "1" o--- "*" StateComponent : children
+    StateMachine "1" o--- "*" StateComponent : root states
+    StateMachine "1" o--- "*" Transition
+    StateMachine "1" o--- "*" Trigger
 
-    class Guard {
-        +Condition : string
-        +IsEmpty : bool
-    }
-
-    class StateMachine {
-        +Name : string
-        +RootStates : IReadOnlyList<StateComponent>
-        +Transitions : IReadOnlyList<Transition>
-        +Triggers : IReadOnlyList<Trigger>
-        +Accept(visitor : IFsmVisitor)
-        +GetAllStates() : IEnumerable<StateComponent>
-        +FindStateById(id : string) : StateComponent
-        +GetOutgoingTransitions(s : StateComponent) : IEnumerable<Transition>
-        +GetIncomingTransitions(s : StateComponent) : IEnumerable<Transition>
-    }
-
-    ' Inheritance (Composite hierarchy)
-    StateComponent <|-- SimpleState
-    StateComponent <|-- CompoundState
-    StateComponent <|-- InitialState
-    StateComponent <|-- FinalState
-
-    ' Composite aggregation
-    CompoundState "1" o-- "*" StateComponent : children
-
-    ' Transition relations
-    Transition "*" --> "1" StateComponent : source
-    Transition "*" --> "1" StateComponent : destination
-    Transition "*" --> "0..1" Trigger
-    Transition "*" --> "0..1" Guard
-    Transition "*" --> "0..1" Action : effect
-
-    ' State actions
-    SimpleState "1" --> "0..1" Action : entry/do/exit
-    CompoundState "1" --> "0..1" Action : entry/do/exit
-
-    Action ..> ActionType
-
-    ' StateMachine aggregations
-    StateMachine "1" o-- "*" StateComponent : rootStates
-    StateMachine "1" o-- "*" Transition
-    StateMachine "1" o-- "*" Trigger
+    Transition "*" ---> "1" StateComponent : source/destination
+    Transition "*" ---> "0..1" Trigger
+    Transition "*" ---> "0..1" Guard
+    Transition "*" ---> "0..1" Action : effect
+    Action ...> ActionType
 }
 
-note top of StateComponent
+note top of Domain
   <b>Composite Pattern</b>
-  Component = StateComponent
-  Leaf = SimpleState, InitialState, FinalState
-  Composite = CompoundState
+  StateComponent is de basis.
+  Simple, Initial en Final zijn leaves.
+  CompoundState bevat child states.
 end note
 
-' ============================================================
-' PARSING LAYER — Builder + Factory Method
-' ============================================================
-package "Parsing" {
-
+package "Parsing\nBuilder + Factory" as Parsing {
     class FsmFileParser {
         +Parse(filePath : string) : StateMachine
-        -StripCommentAndTrim(line : string) : string
-        -ParseLine(line : string, builder : StateMachineBuilder)
-        -ParseStateLine(line : string, builder : StateMachineBuilder)
-        -ParseTriggerLine(line : string, builder : StateMachineBuilder)
-        -ParseActionLine(line : string, builder : StateMachineBuilder)
-        -ParseTransitionLine(line : string, builder : StateMachineBuilder)
     }
 
-    class StateMachineBuilder {
-        -name : string
-        -states : Dictionary<string, StateComponent>
-        -triggers : Dictionary<string, Trigger>
-        -transitions : List<Transition>
+    class StateMachineBuilder <<Builder>> {
         +WithName(name : string) : StateMachineBuilder
-        +AddState(type : StateType, id, parentId, name) : StateMachineBuilder
-        +AddTrigger(id : string, description : string) : StateMachineBuilder
-        +AddAction(ownerId, description, type) : StateMachineBuilder
-        +AddTransition(id, sourceId, destId, triggerId, guard) : StateMachineBuilder
+        +AddState(...) : StateMachineBuilder
+        +AddTrigger(...) : StateMachineBuilder
+        +AddAction(...) : StateMachineBuilder
+        +AddTransition(...) : StateMachineBuilder
         +Build() : StateMachine
     }
 
-    class StateFactory <<static>> {
-        +{static} CreateState(type : StateType, id, name) : StateComponent
+    class StateFactory <<Factory>> {
+        +CreateState(type, id, name) : StateComponent
     }
 
-    enum StateType {
-        Initial
-        Simple
-        Compound
-        Final
-    }
+    enum StateType
 
-    FsmFileParser ..> StateMachineBuilder : uses
-    StateMachineBuilder ..> StateFactory : uses
-    StateFactory ..> StateComponent : creates
-    StateMachineBuilder ..> StateMachine : builds
+    FsmFileParser ..> StateMachineBuilder
+    StateMachineBuilder ..> StateFactory
+    StateMachineBuilder ..> StateMachine
+    StateFactory ..> StateComponent
+    StateFactory ..> StateType
 }
 
-note top of StateMachineBuilder
+note top of Parsing
   <b>Builder Pattern</b>
-  Constructs StateMachine
-  step-by-step while parsing
+  StateMachineBuilder bouwt de StateMachine
+  stap voor stap tijdens het parsen.
+
+  <b>Factory Pattern</b>
+  StateFactory maakt het juiste
+  StateComponent subtype op basis van StateType.
 end note
 
-note top of StateFactory
-  <b>Factory Method</b>
-  Creates correct StateComponent
-  subtype based on StateType
-end note
-
-' ============================================================
-' VISITORS LAYER — Visitor pattern (behavioural #1)
-' ============================================================
-package "Visitors" {
-
-    interface IFsmVisitor {
-        +Visit(sm : StateMachine)
-        +Visit(state : SimpleState)
-        +Visit(state : CompoundState)
-        +Visit(state : InitialState)
-        +Visit(state : FinalState)
-        +Visit(transition : Transition)
-    }
+package "Visitor\nVisitor Pattern" as Visitor {
+    interface IFsmVisitor
 
     class TextRenderVisitor {
-        -output : StringBuilder
-        -indentLevel : int
-        -context : StateMachine
         +GetResult() : string
-        +Visit(sm : StateMachine)
-        +Visit(state : SimpleState)
-        +Visit(state : CompoundState)
-        +Visit(state : InitialState)
-        +Visit(state : FinalState)
-        +Visit(transition : Transition)
+        +Visit(...)
     }
 
     IFsmVisitor <|.. TextRenderVisitor
-    TextRenderVisitor ..> StateMachine : reads
-    StateComponent ..> IFsmVisitor : accept(v)
-    Transition ..> IFsmVisitor : accept(v)
+    StateComponent ..> IFsmVisitor : accept
+    Transition ..> IFsmVisitor : accept
+    TextRenderVisitor ..> StateMachine
 }
 
-note top of IFsmVisitor
+note top of Visitor
   <b>Visitor Pattern</b>
-  Separates rendering logic
-  from the domain model
+  Rendering/logica staat los van het domeinmodel.
+  StateComponent en Transition accepteren een visitor.
 end note
 
-' ============================================================
-' VALIDATION LAYER — Strategy pattern (behavioural #2)
-' ============================================================
-package "Validation" {
-
+package "Validation\nStrategy" as Validation {
     interface IValidationStrategy {
         +Validate(sm : StateMachine) : IEnumerable<ValidationError>
     }
 
-    class ValidationError {
-        +Message : string
-        +RelatedElementId : string
-    }
-
     class ValidationRunner {
-        -strategies : List<IValidationStrategy>
         +AddStrategy(s : IValidationStrategy) : ValidationRunner
         +RunAll(sm : StateMachine) : IReadOnlyList<ValidationError>
     }
 
-    class DeterminismValidator {
-        +Validate(sm : StateMachine) : IEnumerable<ValidationError>
-    }
-
-    class InitialFinalValidator {
-        +Validate(sm : StateMachine) : IEnumerable<ValidationError>
-    }
-
-    class CompoundTargetValidator {
-        +Validate(sm : StateMachine) : IEnumerable<ValidationError>
-    }
+    class ValidationError
+    class DeterminismValidator
+    class InitialFinalValidator
+    class CompoundTargetValidator
 
     IValidationStrategy <|.. DeterminismValidator
     IValidationStrategy <|.. InitialFinalValidator
     IValidationStrategy <|.. CompoundTargetValidator
     ValidationRunner "1" o-- "*" IValidationStrategy
-    ValidationRunner ..> ValidationError : produces
+    ValidationRunner ..> ValidationError
 }
 
-note top of IValidationStrategy
+note top of Validation
   <b>Strategy Pattern</b>
-  Each validator is an
-  interchangeable strategy
+  Elke validator is een verwisselbare strategie.
+  ValidationRunner voert alle strategieen uit.
 end note
 
-' ============================================================
-' PRESENTATION LAYER
-' ============================================================
-package "Presentation" {
-
+package "Presentation" as Presentation {
     class ConsoleUi {
         +DisplayDiagram(sm : StateMachine)
-        +DisplayState(state : StateComponent, ctx : StateMachine)
         +DisplayErrors(errors : IReadOnlyList<ValidationError>)
     }
 
-    ConsoleUi ..> TextRenderVisitor : uses
-    ConsoleUi ..> StateMachine : displays
-    ConsoleUi ..> ValidationError : displays
+    ConsoleUi ..> TextRenderVisitor
+    ConsoleUi ..> StateMachine
+    ConsoleUi ..> ValidationError
 }
 
-' ============================================================
-' APPLICATION ENTRY POINT
-' ============================================================
 class Program {
-    +{static} Main(args : string[])
+    +Main(args : string[])
 }
 
 Program ..> FsmFileParser
