@@ -51,11 +51,11 @@ package "Domain\nComposite" as Domain {
     enum ActionType
 
     StateComponent <|--- SimpleState
-    StateComponent <|--- CompoundState
+    StateComponent <|---- CompoundState
     StateComponent <|--- InitialState
     StateComponent <|--- FinalState
 
-    CompoundState "1" o--- "*" StateComponent : children
+    CompoundState "1" o-------- "*" StateComponent : children
     StateMachine "1" o--- "*" StateComponent : root states
     StateMachine "1" o--- "*" Transition
     StateMachine "1" o--- "*" Trigger
@@ -173,9 +173,5 @@ package "Presentation" as Presentation {
 class Program {
     +Main(args : string[])
 }
-
-Program ..> FsmFileParser
-Program ..> ValidationRunner
-Program ..> ConsoleUi
 
 @enduml
