@@ -1,6 +1,6 @@
 namespace Domain;
 
-public class Guard
+public class Guard(string condition)
 {
-    
+    public string Condition { get; } = condition;
 }

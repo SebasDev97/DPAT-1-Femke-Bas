@@ -2,8 +2,8 @@ namespace Domain;
 
 public enum ActionType
 {
-    Entry,
-    Do,
-    Exit,
-    Transition
+    EntryAction,
+    DoAction,
+    ExitAction,
+    TransitionAction
 }

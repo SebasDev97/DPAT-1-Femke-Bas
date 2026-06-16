@@ -23,6 +23,13 @@
     <ItemGroup>
         <ProjectReference Include="..\Domain\Domain.csproj"/>
         <ProjectReference Include="..\Presentation\Presentation.csproj"/>
+        <ProjectReference Include="..\DPAT-1-Femke-Bas\DPAT-1-Femke-Bas.csproj"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Content Include="fixtures\**">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
     </ItemGroup>
 
 </Project>
