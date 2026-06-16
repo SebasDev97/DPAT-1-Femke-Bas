@@ -8,29 +8,10 @@ public class FsmFileParserTests
 {
     private StateMachine _fsm = null!;
 
-    private const string ToggleLampFsm = """
-        STATE initial _ "powered off" : INITIAL;
-        STATE powered _ "Powered up" : COMPOUND;
-        STATE off powered "Lamp is off" : SIMPLE;
-        STATE on powered "Lamp is on" : SIMPLE;
-        STATE final _ "powered off" : FINAL;
-        TRIGGER power_on "turn power on";
-        TRIGGER push_switch "Push switch";
-        TRIGGER power_off "turn power off";
-        ACTION on "Turn lamp on" : ENTRY_ACTION;
-        ACTION off "Turn lamp off" : EXIT_ACTION;
-        ACTION t2 "reset off timer" : TRANSITION_ACTION;
-        TRANSITION t1 initial off power_on;
-        TRANSITION t2 off on push_switch "time off > 10s";
-        TRANSITION t3 on off push_switch;
-        TRANSITION t4 powered final power_off;
-        """;
-
-    private static StateMachine ParseText(string content, string name = "test") =>
-        new FsmFileParser().Parse(new StringReader(content), name);
-
     [OneTimeSetUp]
-    public void ParseOnce() => _fsm = ParseText(ToggleLampFsm, "toggle-lamp");
+    public void ParseOnce() =>
+        _fsm = new FsmFileParser().Parse(
+            Path.Combine(TestContext.CurrentContext.TestDirectory, "fixtures", "FSM1.txt"));
 
     [Test]
     public void ParseFSM1_RootStates_AreInitialPoweredFinal()
