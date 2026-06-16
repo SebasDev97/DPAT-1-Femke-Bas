@@ -13,4 +13,13 @@
         <ProjectReference Include="..\Presentation\Presentation.csproj"/>
     </ItemGroup>
 
+    <ItemGroup>
+        <None Update="FSM1.txt">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="*.fsm">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
+
 </Project>

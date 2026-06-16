@@ -6,52 +6,45 @@ namespace DPAT_1_Femke_Bas.Visitor;
 public class TextRenderVisitor : IFsmVisitor
 {
     private readonly StringBuilder _stringBuilder = new StringBuilder();
-    private int _indentLevel = 0;
-
-    private string GetIndent() => new string(' ', _indentLevel * 4);
 
     public void Visit(StateMachine stateMachine) 
     { 
         _stringBuilder.AppendLine("Rendering StateMachine:");
         
-        _indentLevel++;
         foreach (var state in stateMachine.RootStates)
         {
             state.Accept(this);
         }
-        _indentLevel--;
     }
     
     public void Visit(CompoundState state) 
     { 
-        _stringBuilder.AppendLine($"{GetIndent()}- CompoundState");
+        _stringBuilder.AppendLine("- CompoundState");
 
-        _indentLevel++;
         foreach (var childState in state.Children) 
         {
             childState.Accept(this);
         }
-        _indentLevel--;
     }
     
     public void Visit(SimpleState state) 
     { 
-        _stringBuilder.AppendLine($"{GetIndent()}- SimpleState");
+        _stringBuilder.AppendLine("- SimpleState");
     }
     
     public void Visit(InitialState state) 
     { 
-        _stringBuilder.AppendLine($"{GetIndent()}- InitialState");
+        _stringBuilder.AppendLine("- InitialState");
     }
     
     public void Visit(FinalState state) 
     { 
-        _stringBuilder.AppendLine($"{GetIndent()}- FinalState");
+        _stringBuilder.AppendLine("- FinalState");
     }
     
     public void Visit(Transition transition) 
     { 
-        _stringBuilder.AppendLine($"{GetIndent()}  -> Transition");
+        _stringBuilder.AppendLine("  -> Transition");
     }
 
     public string GetRenderedText()
